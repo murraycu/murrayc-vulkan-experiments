@@ -23,7 +23,7 @@ LT_INIT([win32-dll])
 MM_PREREQ([0.9.5])
 MM_INIT_MODULE([murrayc-vulkan-experiments-1.0])
 
-# PKG_CHECK_MODULES([PROJECT], [])
+PKG_CHECK_MODULES([PROJECT], [glfw3 glm vulkan])
 
 AC_LANG([C++])
 MM_ARG_ENABLE_WARNINGS([PROJECT_WXXFLAGS],
