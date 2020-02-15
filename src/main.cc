@@ -29,6 +29,7 @@ private:
   }
 
   void initVulkan() {
+    createInstance();
   }
 
   void mainLoop() {
@@ -38,16 +39,59 @@ private:
   }
 
   void cleanup() {
+    vkDestroyInstance(instance_, nullptr);
+    instance_ = {};
+
     glfwDestroyWindow(window_);
     window_ = {};
 
     glfwTerminate();
   }
 
+  void createInstance() {
+    VkApplicationInfo appInfo = {};
+    appInfo.sType = VK_STRUCTURE_TYPE_APPLICATION_INFO;
+    appInfo.pApplicationName = "example";
+    appInfo.applicationVersion = VK_MAKE_VERSION(0, 0, 1);
+    appInfo.pEngineName = "No Engine";
+    appInfo.engineVersion = VK_MAKE_VERSION(0, 0, 1);
+    appInfo.apiVersion = VK_API_VERSION_1_0;
+
+    VkInstanceCreateInfo createInfo = {};
+    createInfo.sType = VK_STRUCTURE_TYPE_INSTANCE_CREATE_INFO;
+    createInfo.pApplicationInfo = &appInfo;
+
+    uint32_t glfwExtensionCount = 0;
+    auto const glfwExtensions = glfwGetRequiredInstanceExtensions(&glfwExtensionCount);
+
+    createInfo.enabledExtensionCount = glfwExtensionCount;
+    createInfo.ppEnabledExtensionNames = glfwExtensions;
+
+    createInfo.enabledLayerCount = 0;
+
+    if (vkCreateInstance(&createInfo, nullptr, &instance_) != VK_SUCCESS) {
+      throw std::runtime_error("failed to create instance.");
+    }
+
+    uint32_t extensionCount = 0;
+    vkEnumerateInstanceExtensionProperties(nullptr, &extensionCount,
+      nullptr);
+
+    std::vector<VkExtensionProperties> extensions(extensionCount);
+    vkEnumerateInstanceExtensionProperties(nullptr, &extensionCount, extensions.data());
+
+    std::cout << "available extensions:" << std::endl;
+    for (auto const ext : extensions) {
+      std::cout << "\t" << ext.extensionName << std::endl;
+    }
+  }
+
   GLFWwindow* window_{};
 
-  static constexpr int WIDTH = 600;
-  static constexpr int HEIGHT = 800;
+  VkInstance instance_{};
+
+  static constexpr int WIDTH = 800;
+  static constexpr int HEIGHT = 600;
 };
 
 int main() {
