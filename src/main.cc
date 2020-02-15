@@ -1,38 +1,39 @@
-#define GLFW_INCLUDE_VULKAN
-#include <GLFW/glfw3.h>
-
-#define GLM_FORCE_RADIANS
-#define GLM_FORCE_DEPTH_ZERO_TO_ONE
-#include <glm/vec4.hpp>
-#include <glm/mat4x4.hpp>
-
-#include <cstdlib>
+#include <vulkan/vulkan.h>
+#include <stdexcept>
+#include <functional>
 #include <iostream>
+#include <cstdlib>
 
-int main() {
-  glfwInit();
-
-  glfwWindowHint(GLFW_CLIENT_API, GLFW_NO_API);
-  auto window = glfwCreateWindow(800, 600, "example",
-    nullptr, nullptr);
-
-  uint32_t extensionCount = 0;
-  vkEnumerateInstanceExtensionProperties(nullptr, &extensionCount,
-    nullptr);
-
-  std::cout << "extensions count: " << extensionCount << std::endl;
-
-  glm::mat4 matrix{};
-  glm::vec4 vec{};
-  auto test = matrix * vec;
-  std::cout << "text.x: " << test.x << std::endl;
-
-  while (!glfwWindowShouldClose(window)) {
-    glfwPollEvents();
+class HelloTriangleApplication {
+public:
+  void run() {
+    initVulkan();
+    mainLoop();
+    cleanup();
   }
 
-  glfwDestroyWindow(window);
-  glfwTerminate();
+private:
+  void initVulkan() {
+  }
+
+  void mainLoop() {
+  }
+
+  void cleanup() {
+  }
+
+
+};
+
+int main() {
+  HelloTriangleApplication app;
+
+  try {
+    app.run();
+  } catch (std::exception const & ex) {
+    std::cerr << ex.what() << std::endl;
+    return EXIT_FAILURE;
+  }
 
   return EXIT_SUCCESS;
 }
