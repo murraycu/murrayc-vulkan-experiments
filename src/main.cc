@@ -75,6 +75,7 @@ private:
     createInstance();
     setupDebugMessenger();
     pickPhysicalDevice();
+    createLogicalDevice();
   }
 
   void mainLoop() {
@@ -84,6 +85,9 @@ private:
   }
 
   void cleanup() {
+    vkDestroyDevice(device_, nullptr);
+    device_ = {};
+
     if (enableValidationLayers) {
       DestroyDebugUtilsMessengerEXT(instance_, debugMessenger_, nullptr);
       debugMessenger_ = {};
@@ -293,11 +297,47 @@ private:
     return indices;
   }
 
+  void createLogicalDevice() {
+    auto const indices = findQueueFamilies(physicalDevice_);
+
+    VkDeviceQueueCreateInfo queueCreateInfo = {};
+    queueCreateInfo.sType = VK_STRUCTURE_TYPE_DEVICE_QUEUE_CREATE_INFO;
+    queueCreateInfo.queueFamilyIndex = indices.graphicsFamily.value();
+    queueCreateInfo.queueCount = 1;
+
+    float queuePriority = 1.0f;
+    queueCreateInfo.pQueuePriorities = &queuePriority;
+
+    VkDeviceCreateInfo createInfo = {};
+    createInfo.sType = VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO;
+
+    createInfo.pQueueCreateInfos = &queueCreateInfo;
+    createInfo.queueCreateInfoCount = 1;
+
+    VkPhysicalDeviceFeatures deviceFeatures = {};
+    createInfo.pEnabledFeatures = &deviceFeatures;
+
+    createInfo.enabledExtensionCount = 0;
+
+    if (enableValidationLayers) {
+      createInfo.enabledLayerCount = validationLayers.size();
+      createInfo.ppEnabledLayerNames = validationLayers.data();
+    }
+
+    if (vkCreateDevice(physicalDevice_, &createInfo, nullptr, &device_) != VK_SUCCESS) {
+      throw std::runtime_error("failed to create logical device.");
+    }
+
+    vkGetDeviceQueue(device_, indices.graphicsFamily.value(), 0, &graphicsQueue_);
+  }
+
   GLFWwindow* window_{};
 
   VkInstance instance_{};
   VkDebugUtilsMessengerEXT debugMessenger_{};
   VkPhysicalDevice physicalDevice_ = VK_NULL_HANDLE;
+  VkDevice device_{};
+  VkQueue graphicsQueue_{};
 
   static constexpr int WIDTH = 800;
   static constexpr int HEIGHT = 600;
