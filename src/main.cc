@@ -6,6 +6,7 @@
 #include <stdexcept>
 #include <functional>
 #include <iostream>
+#include <optional>
 
 #include <cstdlib>
 #include <cstring>
@@ -73,6 +74,7 @@ private:
   void initVulkan() {
     createInstance();
     setupDebugMessenger();
+    pickPhysicalDevice();
   }
 
   void mainLoop() {
@@ -224,9 +226,78 @@ private:
     return VK_FALSE; // Dont' abort.
   }
 
+  bool isDeviceSuitable(VkPhysicalDevice device) {
+    VkPhysicalDeviceProperties deviceProperties;
+    vkGetPhysicalDeviceProperties(device, &deviceProperties);
+
+    VkPhysicalDeviceFeatures deviceFeatures;
+    vkGetPhysicalDeviceFeatures(device, &deviceFeatures);
+
+    auto const indices = findQueueFamilies(device);
+
+    return /* deviceProperties.deviceType ==
+      VK_PHYSICAL_DEVICE_TYPE_DISCRETE_GPU && */
+      deviceFeatures.geometryShader &&
+      indices.isComplete();
+  }
+
+  void pickPhysicalDevice() {
+    uint32_t deviceCount = 0;
+    vkEnumeratePhysicalDevices(instance_, &deviceCount, nullptr);
+
+    if (deviceCount == 0) {
+      throw std::runtime_error("failed to find GPUs with Vulkan support.");
+    }
+
+    std::vector<VkPhysicalDevice> devices(deviceCount);
+    vkEnumeratePhysicalDevices(instance_, &deviceCount, devices.data());
+
+    for (auto const & device : devices) {
+      if (isDeviceSuitable(device)) {
+        physicalDevice_  = device;
+        return;
+      }
+    }
+
+    throw std::runtime_error("failed to find a suitable GPU.");
+  }
+
+  struct QueueFamilyIndices {
+    std::optional<uint32_t> graphicsFamily;
+
+    bool isComplete() const {
+      return graphicsFamily.has_value();
+    }
+  };
+
+  static QueueFamilyIndices
+  findQueueFamilies(VkPhysicalDevice device) {
+    QueueFamilyIndices indices;
+
+    uint32_t queueFamilyCount = 0;
+    vkGetPhysicalDeviceQueueFamilyProperties(device, &queueFamilyCount, nullptr);
+
+    std::vector<VkQueueFamilyProperties> queueFamilies(queueFamilyCount);
+    vkGetPhysicalDeviceQueueFamilyProperties(device, &queueFamilyCount, queueFamilies.data());
+
+    int i = 0;
+    for (auto const queueFamily : queueFamilies) {
+      if (queueFamily.queueFlags & VK_QUEUE_GRAPHICS_BIT) {
+        indices.graphicsFamily = i;
+        return indices;
+      }
+
+      ++i;
+    }
+
+    return indices;
+  }
+
   GLFWwindow* window_{};
 
   VkInstance instance_{};
+  VkDebugUtilsMessengerEXT debugMessenger_{};
+  VkPhysicalDevice physicalDevice_ = VK_NULL_HANDLE;
 
   static constexpr int WIDTH = 800;
   static constexpr int HEIGHT = 600;
