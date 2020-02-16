@@ -74,6 +74,7 @@ private:
   void initVulkan() {
     createInstance();
     setupDebugMessenger();
+    createSurface();
     pickPhysicalDevice();
     createLogicalDevice();
   }
@@ -92,6 +93,9 @@ private:
       DestroyDebugUtilsMessengerEXT(instance_, debugMessenger_, nullptr);
       debugMessenger_ = {};
     }
+
+    vkDestroySurfaceKHR(instance_, surface_, nullptr);
+    surface_ = {};
 
     vkDestroyInstance(instance_, nullptr);
     instance_ = {};
@@ -205,6 +209,12 @@ private:
     }
   }
 
+  void createSurface() {
+    if (glfwCreateWindowSurface(instance_, window_, nullptr, &surface_) != VK_SUCCESS) {
+      throw std::runtime_error("failed to create surface");
+    }
+  }
+
   void populateDebugMessengerCreateInfo(VkDebugUtilsMessengerCreateInfoEXT& createInfo) {
     createInfo.sType = VK_STRUCTURE_TYPE_DEBUG_UTILS_MESSENGER_CREATE_INFO_EXT;
     createInfo.messageSeverity =
@@ -268,13 +278,15 @@ private:
 
   struct QueueFamilyIndices {
     std::optional<uint32_t> graphicsFamily;
+    std::optional<uint32_t> presentFamily;
 
     bool isComplete() const {
-      return graphicsFamily.has_value();
+      return graphicsFamily.has_value() &&
+        presentFamily.has_value();;
     }
   };
 
-  static QueueFamilyIndices
+  QueueFamilyIndices
   findQueueFamilies(VkPhysicalDevice device) {
     QueueFamilyIndices indices;
 
@@ -288,7 +300,16 @@ private:
     for (auto const queueFamily : queueFamilies) {
       if (queueFamily.queueFlags & VK_QUEUE_GRAPHICS_BIT) {
         indices.graphicsFamily = i;
-        return indices;
+      }
+
+      VkBool32 presentSupport = false;
+      vkGetPhysicalDeviceSurfaceSupportKHR(device, i, surface_, &presentSupport);
+      if (presentSupport) {
+        indices.presentFamily = i;
+      }
+
+      if (indices.isComplete()) {
+        break;
       }
 
       ++i;
@@ -338,6 +359,7 @@ private:
   VkPhysicalDevice physicalDevice_ = VK_NULL_HANDLE;
   VkDevice device_{};
   VkQueue graphicsQueue_{};
+  VkSurfaceKHR surface_{};
 
   static constexpr int WIDTH = 800;
   static constexpr int HEIGHT = 600;
