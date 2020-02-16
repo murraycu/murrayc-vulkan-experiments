@@ -7,6 +7,7 @@
 #include <functional>
 #include <iostream>
 #include <optional>
+#include <set>
 
 #include <cstdlib>
 #include <cstring>
@@ -321,19 +322,26 @@ private:
   void createLogicalDevice() {
     auto const indices = findQueueFamilies(physicalDevice_);
 
-    VkDeviceQueueCreateInfo queueCreateInfo = {};
-    queueCreateInfo.sType = VK_STRUCTURE_TYPE_DEVICE_QUEUE_CREATE_INFO;
-    queueCreateInfo.queueFamilyIndex = indices.graphicsFamily.value();
-    queueCreateInfo.queueCount = 1;
+    std::vector<VkDeviceQueueCreateInfo> queueCreateInfos;
+    std::set<uint32_t> uniqueQueueFamilies = {
+      indices.graphicsFamily.value(), indices.presentFamily.value()};
 
     float queuePriority = 1.0f;
-    queueCreateInfo.pQueuePriorities = &queuePriority;
+    for (auto const queueFamily : uniqueQueueFamilies) {
+      VkDeviceQueueCreateInfo queueCreateInfo = {};
+      queueCreateInfo.sType = VK_STRUCTURE_TYPE_DEVICE_QUEUE_CREATE_INFO;
+      queueCreateInfo.queueFamilyIndex = queueFamily;
+      queueCreateInfo.queueCount = 1;
+
+      queueCreateInfo.pQueuePriorities = &queuePriority;
+      queueCreateInfos.emplace_back(queueCreateInfo);
+    }
 
     VkDeviceCreateInfo createInfo = {};
     createInfo.sType = VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO;
 
-    createInfo.pQueueCreateInfos = &queueCreateInfo;
-    createInfo.queueCreateInfoCount = 1;
+    createInfo.queueCreateInfoCount = queueCreateInfos.size();
+    createInfo.pQueueCreateInfos = queueCreateInfos.data();;
 
     VkPhysicalDeviceFeatures deviceFeatures = {};
     createInfo.pEnabledFeatures = &deviceFeatures;
@@ -350,6 +358,7 @@ private:
     }
 
     vkGetDeviceQueue(device_, indices.graphicsFamily.value(), 0, &graphicsQueue_);
+    vkGetDeviceQueue(device_, indices.presentFamily.value(), 0, &presentQueue_);
   }
 
   GLFWwindow* window_{};
@@ -360,6 +369,7 @@ private:
   VkDevice device_{};
   VkQueue graphicsQueue_{};
   VkSurfaceKHR surface_{};
+  VkQueue presentQueue_{};
 
   static constexpr int WIDTH = 800;
   static constexpr int HEIGHT = 600;
