@@ -134,8 +134,35 @@ private:
       swapChainImages_.data());
     // std::cout << "debug: " << swapChainImages_.size() << std::endl;
 
-    swapChainFormat_ = surfaceFormat.format;
+    swapChainImageFormat_ = surfaceFormat.format;
     swapChainExtent_ = extent;
+  }
+
+  void createImageViews() {
+    swapChainImageViews_.resize(swapChainImages_.size());
+    for (auto i = 0u; i < swapChainImages_.size(); ++i) {
+      VkImageViewCreateInfo createInfo = {};
+      createInfo.sType = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO;
+      createInfo.image = swapChainImages_[i];
+      createInfo.viewType = VK_IMAGE_VIEW_TYPE_2D;
+      createInfo.format = swapChainImageFormat_;
+
+      createInfo.components.r = VK_COMPONENT_SWIZZLE_IDENTITY;
+      createInfo.components.g = VK_COMPONENT_SWIZZLE_IDENTITY;
+      createInfo.components.r = VK_COMPONENT_SWIZZLE_IDENTITY;
+      createInfo.components.a = VK_COMPONENT_SWIZZLE_IDENTITY;
+
+      createInfo.subresourceRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
+      createInfo.subresourceRange.baseMipLevel = 0;
+      createInfo.subresourceRange.levelCount = 1;
+      createInfo.subresourceRange.baseArrayLayer = 0;
+      createInfo.subresourceRange.layerCount = 1;
+
+      if (vkCreateImageView(device_, &createInfo, nullptr,
+        &swapChainImageViews_[i]) != VK_SUCCESS) {
+        throw std::runtime_error("failed to create image view");
+      }
+    }
   }
 
   void initVulkan() {
@@ -145,6 +172,7 @@ private:
     pickPhysicalDevice();
     createLogicalDevice();
     createSwapChain();
+    createImageViews();
   }
 
   void mainLoop() {
@@ -154,6 +182,10 @@ private:
   }
 
   void cleanup() {
+    for (auto imageView : swapChainImageViews_) {
+      vkDestroyImageView(device_, imageView, nullptr);
+    }
+
     vkDestroySwapchainKHR(device_, swapChain_, nullptr);
     swapChain_ = {};
 
@@ -558,8 +590,9 @@ private:
   VkQueue presentQueue_{};
   VkSwapchainKHR swapChain_{};
   std::vector<VkImage> swapChainImages_;
-  VkFormat swapChainFormat_;
+  VkFormat swapChainImageFormat_;
   VkExtent2D swapChainExtent_;
+  std::vector<VkImageView> swapChainImageViews_;
 
   static constexpr int WIDTH = 800;
   static constexpr int HEIGHT = 600;
