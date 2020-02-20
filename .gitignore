@@ -72,3 +72,5 @@ Makefile.in
 CMakeCache.txt
 cmake_uninstall.cmake
 
+src/shaders/*.spv
+*.swp
