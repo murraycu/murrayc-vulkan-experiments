@@ -96,3 +96,6 @@ tests_test_thing_LDADD = \
 
 CLEANFILES = stamp-h2
 
+
+format:
+	clang-format -i src/*.cc
