@@ -45,9 +45,12 @@ struct Vertex {
   }
 };
 
-const auto vertices = std::vector<Vertex>{{{0.0f, -0.5f}, {1.0f, 1.0f, 1.0f}},
-                                          {{0.5f, 0.5f}, {0.0f, 1.0f, 0.0f}},
-                                          {{-0.5f, 0.5f}, {0.0f, 0.0f, 1.0f}}};
+const auto vertices = std::vector<Vertex>{{{-0.5f, -0.5f}, {1.0f, 0.0f, 0.0f}},
+                                          {{0.5f, -0.5f}, {0.0f, 1.0f, 0.0f}},
+                                          {{0.5f, 0.5f}, {0.0f, 0.0f, 1.0f}},
+                                          {{-0.5f, 0.5f}, {1.0f, 1.0f, 1.0f}}};
+
+const auto indices = std::vector<uint16_t>{0, 1, 2, 2, 3, 0};
 
 static std::vector<char> readFile(const std::string& filename) {
   std::ifstream file(filename, std::ios::ate | std::ios::binary);
@@ -253,6 +256,7 @@ private:
     createFramebuffers();
     createCommandPool();
     createVertexBuffer();
+    createIndexBuffer();
     createCommandBuffers();
     createSyncObjects();
   }
@@ -289,6 +293,9 @@ private:
 
   void cleanup() {
     cleanupSwapChain();
+
+    vkDestroyBuffer(device_, indexBuffer_, nullptr);
+    vkFreeMemory(device_, indexBufferMemory_, nullptr);
 
     vkDestroyBuffer(device_, vertexBuffer_, nullptr);
     vkFreeMemory(device_, vertexBufferMemory_, nullptr);
@@ -997,6 +1004,28 @@ private:
     copyBuffer(stagingBuffer, vertexBuffer_, bufferSize);
   }
 
+  void createIndexBuffer() {
+    auto const bufferSize = sizeof(indices[0]) * indices.size();
+
+    VkBuffer stagingBuffer = {};
+    VkDeviceMemory stagingBufferMemory = {};
+    createBuffer(bufferSize, VK_BUFFER_USAGE_TRANSFER_SRC_BIT,
+                 VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT |
+                     VK_MEMORY_PROPERTY_HOST_COHERENT_BIT,
+                 stagingBuffer, stagingBufferMemory);
+
+    void* data = nullptr;
+    vkMapMemory(device_, stagingBufferMemory, 0, bufferSize, 0, &data);
+    memcpy(data, indices.data(), bufferSize);
+    vkUnmapMemory(device_, stagingBufferMemory);
+
+    createBuffer(
+        bufferSize,
+        VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_INDEX_BUFFER_BIT,
+        VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, indexBuffer_, indexBufferMemory_);
+    copyBuffer(stagingBuffer, indexBuffer_, bufferSize);
+  }
+
   void copyBuffer(VkBuffer srcBuffer, VkBuffer dstBuffer, VkDeviceSize size) {
     VkCommandBufferAllocateInfo allocInfo = {};
     allocInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO;
@@ -1092,8 +1121,10 @@ private:
       VkBuffer vertexBuffers[] = {vertexBuffer_};
       VkDeviceSize offsets[] = {0};
       vkCmdBindVertexBuffers(commandBuffer, 0, 1, vertexBuffers, offsets);
+      vkCmdBindIndexBuffer(commandBuffer, indexBuffer_, 0,
+                           VK_INDEX_TYPE_UINT16);
 
-      vkCmdDraw(commandBuffer, vertices.size(), 1, 0, 0);
+      vkCmdDrawIndexed(commandBuffer, indices.size(), 1, 0, 0, 0);
       vkCmdEndRenderPass(commandBuffer);
 
       if (vkEndCommandBuffer(commandBuffer) != VK_SUCCESS) {
@@ -1223,8 +1254,12 @@ private:
   std::vector<VkFramebuffer> swapChainFramebuffers_;
   VkCommandPool commandPool_;
   std::vector<VkCommandBuffer> commandBuffers_;
+
   VkBuffer vertexBuffer_;
   VkDeviceMemory vertexBufferMemory_;
+  VkBuffer indexBuffer_;
+  VkDeviceMemory indexBufferMemory_;
+
   std::vector<VkSemaphore> imageAvailableSemaphores_;
   std::vector<VkSemaphore> renderFinishedSemaphores_;
   std::vector<VkFence> inFlightFences_;
