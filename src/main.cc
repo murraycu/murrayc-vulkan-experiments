@@ -55,7 +55,7 @@ const auto vertices = std::vector<Vertex>{{{-0.5f, -0.5f}, {1.0f, 0.0f, 0.0f}},
                                           {{0.5f, 0.5f}, {0.0f, 0.0f, 1.0f}},
                                           {{-0.5f, 0.5f}, {1.0f, 1.0f, 1.0f}}};
 
-const auto indices = std::vector<uint16_t>{0, 1, 2, 2, 3, 0};
+const auto vertex_indices = std::vector<uint16_t>{0, 1, 2, 2, 3, 0};
 
 struct UniformBufferObject {
   glm::mat4 model;
@@ -139,8 +139,8 @@ private:
     glfwSetFramebufferSizeCallback(window_, &framebufferResizeCallback);
   }
 
-  static void framebufferResizeCallback(GLFWwindow* window, int width,
-                                        int height) {
+  static void framebufferResizeCallback(GLFWwindow* window, int /* width */,
+                                        int /* height */) {
     auto app = reinterpret_cast<HelloTriangleApplication*>(
         glfwGetWindowUserPointer(window));
     app->framebufferResized_ = true;
@@ -1050,7 +1050,7 @@ private:
   }
 
   void createIndexBuffer() {
-    auto const bufferSize = sizeof(indices[0]) * indices.size();
+    auto const bufferSize = sizeof(vertex_indices[0]) * vertex_indices.size();
 
     VkBuffer stagingBuffer = {};
     VkDeviceMemory stagingBufferMemory = {};
@@ -1061,7 +1061,7 @@ private:
 
     void* data = nullptr;
     vkMapMemory(device_, stagingBufferMemory, 0, bufferSize, 0, &data);
-    memcpy(data, indices.data(), bufferSize);
+    memcpy(data, vertex_indices.data(), bufferSize);
     vkUnmapMemory(device_, stagingBufferMemory);
 
     createBuffer(
@@ -1240,7 +1240,7 @@ private:
       vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS,
                               pipelineLayout_, 0, 1, &descriptorSets_[i], 0,
                               nullptr);
-      vkCmdDrawIndexed(commandBuffer, indices.size(), 1, 0, 0, 0);
+      vkCmdDrawIndexed(commandBuffer, vertex_indices.size(), 1, 0, 0, 0);
       vkCmdEndRenderPass(commandBuffer);
 
       if (vkEndCommandBuffer(commandBuffer) != VK_SUCCESS) {
@@ -1307,7 +1307,7 @@ private:
                     UINT64_MAX);
 
     uint32_t imageIndex = 0;
-    auto const result = vkAcquireNextImageKHR(
+    auto result = vkAcquireNextImageKHR(
         device_, swapChain_, UINT64_MAX,
         imageAvailableSemaphores_[currentFrame_], VK_NULL_HANDLE, &imageIndex);
     if (result == VK_ERROR_OUT_OF_DATE_KHR) {
@@ -1363,16 +1363,13 @@ private:
     presentInfo.pImageIndices = &imageIndex;
     presentInfo.pResults = nullptr;
 
-    {
-
-      auto const result = vkQueuePresentKHR(presentQueue_, &presentInfo);
-      if (result == VK_ERROR_OUT_OF_DATE_KHR || result == VK_SUBOPTIMAL_KHR ||
-          framebufferResized_) {
-        framebufferResized_ = false;
-        recreateSwapChain();
-      } else if (result != VK_SUCCESS && result != VK_SUBOPTIMAL_KHR) {
-        throw std::runtime_error("failed to present swap chain image.");
-      }
+    result = vkQueuePresentKHR(presentQueue_, &presentInfo);
+    if (result == VK_ERROR_OUT_OF_DATE_KHR || result == VK_SUBOPTIMAL_KHR ||
+        framebufferResized_) {
+      framebufferResized_ = false;
+      recreateSwapChain();
+    } else if (result != VK_SUCCESS && result != VK_SUBOPTIMAL_KHR) {
+      throw std::runtime_error("failed to present swap chain image.");
     }
 
     vkQueueWaitIdle(presentQueue_);
