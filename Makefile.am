@@ -98,4 +98,4 @@ CLEANFILES = stamp-h2
 
 
 format:
-	clang-format -i src/*.cc
+	clang-format -i src/*.cc src/shaders/*.vert src/shaders/*.frag
