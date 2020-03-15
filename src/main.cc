@@ -376,7 +376,7 @@ private:
       createInfo.ppEnabledLayerNames = validationLayers.data();
 
       populateDebugMessengerCreateInfo(debugCreateInfo);
-      // TODO: Crashes: createInfo.pNext = &debugCreateInfo;
+      createInfo.pNext = &debugCreateInfo;
     }
 
     if (vkCreateInstance(&createInfo, nullptr, &instance_) != VK_SUCCESS) {
