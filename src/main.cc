@@ -228,6 +228,8 @@ private:
 
     vkDeviceWaitIdle(device_);
 
+    cleanupSwapChain();
+
     createSwapChain();
     createImageViews();
     createRenderPass();
