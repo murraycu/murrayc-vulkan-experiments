@@ -59,20 +59,6 @@ struct Vertex {
   }
 };
 
-const auto vertices = std::vector<Vertex>{
-    {{-0.5f, -0.5f, 0.0f}, {1.0f, 0.0f, 0.0f}, {1.0f, 0.0f}},
-    {{0.5f, -0.5f, 0.0f}, {0.0f, 1.0f, 0.0f}, {0.0f, 0.0f}},
-    {{0.5f, 0.5f, 0.0f}, {0.0f, 0.0f, 1.0f}, {0.0f, 1.0f}},
-    {{-0.5f, 0.5f, 0.0f}, {1.0f, 1.0f, 1.0f}, {1.0f, 1.0f}},
-
-    {{-0.5f, -0.5f, -0.5f}, {1.0f, 0.0f, 0.0f}, {1.0f, 0.0f}},
-    {{0.5f, -0.5f, -0.5f}, {0.0f, 1.0f, 0.0f}, {0.0f, 0.0f}},
-    {{0.5f, 0.5f, -0.5f}, {0.0f, 0.0f, 1.0f}, {0.0f, 1.0f}},
-    {{-0.5f, 0.5f, -0.5f}, {1.0f, 1.0f, 1.0f}, {1.0f, 1.0f}}};
-
-const auto vertex_indices =
-    std::vector<uint16_t>{0, 1, 2, 2, 3, 0, 4, 5, 6, 6, 7, 4};
-
 struct UniformBufferObject {
   alignas(16) glm::mat4 model;
   alignas(16) glm::mat4 view;
@@ -1108,8 +1094,8 @@ private:
     int texWidth = 0;
     int texHeight = 0;
     int texChannels = 0;
-    stbi_uc* pixels = stbi_load("src/textures/texture.jpg", &texWidth,
-                                &texHeight, &texChannels, STBI_rgb_alpha);
+    stbi_uc* pixels = stbi_load(TEXTURE_PATH, &texWidth, &texHeight,
+                                &texChannels, STBI_rgb_alpha);
     VkDeviceSize imageSize = texWidth * texHeight * 4;
     if (!pixels) {
       throw std::runtime_error("failed to load texture image.");
@@ -1356,7 +1342,7 @@ private:
   }
 
   void createVertexBuffer() {
-    auto const bufferSize = sizeof(vertices[0]) * vertices.size();
+    auto const bufferSize = sizeof(vertices_[0]) * vertices_.size();
 
     VkBuffer stagingBuffer = {};
     VkDeviceMemory stagingBufferMemory = {};
@@ -1367,7 +1353,7 @@ private:
 
     void* data = nullptr;
     vkMapMemory(device_, stagingBufferMemory, 0, bufferSize, 0, &data);
-    memcpy(data, vertices.data(), bufferSize);
+    memcpy(data, vertices_.data(), bufferSize);
     vkUnmapMemory(device_, stagingBufferMemory);
 
     createBuffer(bufferSize,
@@ -1382,7 +1368,7 @@ private:
   }
 
   void createIndexBuffer() {
-    auto const bufferSize = sizeof(vertex_indices[0]) * vertex_indices.size();
+    auto const bufferSize = sizeof(vertex_indices_[0]) * vertex_indices_.size();
 
     VkBuffer stagingBuffer = {};
     VkDeviceMemory stagingBufferMemory = {};
@@ -1393,7 +1379,7 @@ private:
 
     void* data = nullptr;
     vkMapMemory(device_, stagingBufferMemory, 0, bufferSize, 0, &data);
-    memcpy(data, vertex_indices.data(), bufferSize);
+    memcpy(data, vertex_indices_.data(), bufferSize);
     vkUnmapMemory(device_, stagingBufferMemory);
 
     createBuffer(
@@ -1598,12 +1584,12 @@ private:
       VkDeviceSize offsets[] = {0};
       vkCmdBindVertexBuffers(commandBuffer, 0, 1, vertexBuffers, offsets);
       vkCmdBindIndexBuffer(commandBuffer, indexBuffer_, 0,
-                           VK_INDEX_TYPE_UINT16);
+                           VK_INDEX_TYPE_UINT32);
 
       vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS,
                               pipelineLayout_, 0, 1, &descriptorSets_[i], 0,
                               nullptr);
-      vkCmdDrawIndexed(commandBuffer, vertex_indices.size(), 1, 0, 0, 0);
+      vkCmdDrawIndexed(commandBuffer, vertex_indices_.size(), 1, 0, 0, 0);
       vkCmdEndRenderPass(commandBuffer);
 
       if (vkEndCommandBuffer(commandBuffer) != VK_SUCCESS) {
@@ -1790,6 +1776,22 @@ private:
 
   static constexpr int WIDTH = 800;
   static constexpr int HEIGHT = 600;
+
+  static constexpr auto TEXTURE_PATH = "src/textures/texture.jpg";
+
+  std::vector<Vertex> vertices_{
+      {{-0.5f, -0.5f, 0.0f}, {1.0f, 0.0f, 0.0f}, {1.0f, 0.0f}},
+      {{0.5f, -0.5f, 0.0f}, {0.0f, 1.0f, 0.0f}, {0.0f, 0.0f}},
+      {{0.5f, 0.5f, 0.0f}, {0.0f, 0.0f, 1.0f}, {0.0f, 1.0f}},
+      {{-0.5f, 0.5f, 0.0f}, {1.0f, 1.0f, 1.0f}, {1.0f, 1.0f}},
+
+      {{-0.5f, -0.5f, -0.5f}, {1.0f, 0.0f, 0.0f}, {1.0f, 0.0f}},
+      {{0.5f, -0.5f, -0.5f}, {0.0f, 1.0f, 0.0f}, {0.0f, 0.0f}},
+      {{0.5f, 0.5f, -0.5f}, {0.0f, 0.0f, 1.0f}, {0.0f, 1.0f}},
+      {{-0.5f, 0.5f, -0.5f}, {1.0f, 1.0f, 1.0f}, {1.0f, 1.0f}}};
+
+  std::vector<uint32_t> vertex_indices_{0, 1, 2, 2, 3, 0,
+                                              4, 5, 6, 6, 7, 4};
 };
 
 int main() {
