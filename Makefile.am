@@ -15,7 +15,8 @@ dist_noinst_DATA = CMakeLists.txt \
 
 bin_PROGRAMS = example
 
-example_SOURCES = src/main.cc
+example_SOURCES = src/main.cc \
+		  tinyobjloader/tiny_obj_loader.h
 example_CXXFLAGS = ${PROJECT_CFLAGS} ${PROJECT_WXXFLAGS}
 example_LDADD = ${PROJECT_LIBS}
 
@@ -72,8 +73,8 @@ EXTRA_DIST = $(gtest_top_srcdir)/src/gtest-all.cc \
 	     $(gtest_top_srcdir)/include/gtest/internal/custom/gtest-printers.h \
 	     $(gtest_top_srcdir)/include/gtest/internal/custom/gtest-port.h
 
-COMMON_CXXFLAGS = $(PROJECT_CFLAGS) $(PROJECT_WXXFLAGS) $(BOOST_CPPFLAGS)
-COMMON_CPPFLAGS = -I$(top_builddir) -I$(top_srcdir) \
+COMMON_CXXFLAGS = $(PROJECT_CFLAGS) $(PROJECT_WXXFLAGS)
+COMMON_CPPFLAGS = -I$(top_builddir)/src -I$(top_srcdir)/src \
 		  -isystem $(gtest_top_srcdir)/include
 COMMON_LIBS = $(PROJECT_LIBS) libgtest.la
 

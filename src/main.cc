@@ -9,8 +9,14 @@
 #include <glm/glm.hpp>
 #include <glm/gtc/matrix_transform.hpp>
 
+#define GLM_ENABLE_EXPERIMENTAL
+#include <glm/gtx/hash.hpp>
+
 #define STB_IMAGE_IMPLEMENTATION
 #include <stb/stb_image.h>
+
+#define TINYOBJLOADER_IMPLEMENTATION
+#include "../tinyobjloader/tiny_obj_loader.h"
 
 #include <chrono>
 #include <fstream>
@@ -19,6 +25,8 @@
 #include <optional>
 #include <set>
 #include <stdexcept>
+#include <unordered_map>
+#include <vector>
 
 #include <cstdint>
 #include <cstdlib>
@@ -57,6 +65,11 @@ struct Vertex {
 
     return result;
   }
+
+  bool operator==(const Vertex& other) const {
+    return pos == other.pos && color == other.color &&
+           texCoord == other.texCoord;
+  }
 };
 
 struct UniformBufferObject {
@@ -80,6 +93,17 @@ static std::vector<char> readFile(const std::string& filename) {
 
   return buffer;
 }
+
+namespace std {
+template <> struct hash<Vertex> {
+  size_t operator()(Vertex const& vertex) const {
+    return ((hash<glm::vec3>()(vertex.pos) ^
+             (hash<glm::vec3>()(vertex.color) << 1)) >>
+            1) ^
+           (hash<glm::vec2>()(vertex.texCoord) << 1);
+  }
+};
+} // namespace std
 
 const std::vector<const char*> validationLayers = {
     // TODO: The tutorial uses this: "VK_LAYER_KHRONOS_validation"
@@ -261,6 +285,7 @@ private:
     createTextureImage();
     createTextureImageView();
     createTextureSampler();
+    loadModel();
     createVertexBuffer();
     createIndexBuffer();
     createUniformBuffers();
@@ -415,11 +440,11 @@ private:
     vkEnumerateInstanceLayerProperties(&layerCount, availableLayers.data());
 
     std::cout << "available layers:" << std::endl;
-    for (auto const & layer : availableLayers) {
+    for (auto const& layer : availableLayers) {
       std::cout << "\t" << layer.layerName << std::endl;
     }
 
-    for (auto const & layer : validationLayers) {
+    for (auto const& layer : validationLayers) {
       for (const auto& layerProperties : availableLayers) {
         if (strcmp(layer, layerProperties.layerName) == 0) {
           return true;
@@ -1086,6 +1111,8 @@ private:
     depthImageView_ =
         createImageView(depthImage_, depthFormat, VK_IMAGE_ASPECT_DEPTH_BIT);
 
+    // Optional: See "Explicitly transitioning the depth image" here:
+    // https://vulkan-tutorial.com/Depth_buffering
     transitionImageLayout(depthImage_, depthFormat, VK_IMAGE_LAYOUT_UNDEFINED,
                           VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL);
   }
@@ -1197,6 +1224,8 @@ private:
     barrier.dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
     barrier.image = image;
 
+    // Optional: See "Explicitly transitioning the depth image" here:
+    // https://vulkan-tutorial.com/Depth_buffering
     if (newLayout == VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL) {
       barrier.subresourceRange.aspectMask = VK_IMAGE_ASPECT_DEPTH_BIT;
 
@@ -1218,6 +1247,8 @@ private:
     barrier.srcAccessMask = 0;
     barrier.dstAccessMask = 0;
 
+    // Optional: See "Explicitly transitioning the depth image" here:
+    // https://vulkan-tutorial.com/Depth_buffering
     if (oldLayout == VK_IMAGE_LAYOUT_UNDEFINED &&
         newLayout == VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL) {
       barrier.srcAccessMask = 0;
@@ -1339,6 +1370,43 @@ private:
     }
 
     vkBindBufferMemory(device_, buffer, bufferMemory, 0);
+  }
+
+  void loadModel() {
+    tinyobj::attrib_t attrib;
+    std::vector<tinyobj::shape_t> shapes;
+    std::vector<tinyobj::material_t> materials;
+    std::string warn, err;
+
+    if (!tinyobj::LoadObj(&attrib, &shapes, &materials, &warn, &err,
+                          MODEL_PATH)) {
+      throw std::runtime_error(warn + err);
+    }
+
+    std::unordered_map<Vertex, uint32_t> uniqueVertices = {};
+
+    for (const auto& shape : shapes) {
+      for (const auto& index : shape.mesh.indices) {
+        Vertex vertex = {};
+
+        vertex.pos = {attrib.vertices[3 * index.vertex_index + 0],
+                      attrib.vertices[3 * index.vertex_index + 1],
+                      attrib.vertices[3 * index.vertex_index + 2]};
+
+        vertex.texCoord = {attrib.texcoords[2 * index.texcoord_index + 0],
+                           1.0f -
+                               attrib.texcoords[2 * index.texcoord_index + 1]};
+
+        vertex.color = {1.0f, 1.0f, 1.0f};
+
+        if (uniqueVertices.count(vertex) == 0) {
+          uniqueVertices[vertex] = static_cast<uint32_t>(vertices_.size());
+          vertices_.push_back(vertex);
+        }
+
+        vertex_indices_.push_back(uniqueVertices[vertex]);
+      }
+    }
   }
 
   void createVertexBuffer() {
@@ -1775,21 +1843,11 @@ private:
   static constexpr int WIDTH = 800;
   static constexpr int HEIGHT = 600;
 
-  static constexpr auto TEXTURE_PATH = "src/textures/texture.jpg";
+  std::vector<Vertex> vertices_;
+  std::vector<uint32_t> vertex_indices_;
 
-  std::vector<Vertex> vertices_{
-      {{-0.5f, -0.5f, 0.0f}, {1.0f, 0.0f, 0.0f}, {1.0f, 0.0f}},
-      {{0.5f, -0.5f, 0.0f}, {0.0f, 1.0f, 0.0f}, {0.0f, 0.0f}},
-      {{0.5f, 0.5f, 0.0f}, {0.0f, 0.0f, 1.0f}, {0.0f, 1.0f}},
-      {{-0.5f, 0.5f, 0.0f}, {1.0f, 1.0f, 1.0f}, {1.0f, 1.0f}},
-
-      {{-0.5f, -0.5f, -0.5f}, {1.0f, 0.0f, 0.0f}, {1.0f, 0.0f}},
-      {{0.5f, -0.5f, -0.5f}, {0.0f, 1.0f, 0.0f}, {0.0f, 0.0f}},
-      {{0.5f, 0.5f, -0.5f}, {0.0f, 0.0f, 1.0f}, {0.0f, 1.0f}},
-      {{-0.5f, 0.5f, -0.5f}, {1.0f, 1.0f, 1.0f}, {1.0f, 1.0f}}};
-
-  std::vector<uint32_t> vertex_indices_{0, 1, 2, 2, 3, 0,
-                                              4, 5, 6, 6, 7, 4};
+  static constexpr auto MODEL_PATH = "src/models/chalet.obj";
+  static constexpr auto TEXTURE_PATH = "src/textures/chalet.jpg";
 };
 
 int main() {
