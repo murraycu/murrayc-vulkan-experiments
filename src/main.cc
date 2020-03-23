@@ -1262,6 +1262,9 @@ private:
                  VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, vertexBuffer_,
                  vertexBufferMemory_);
     copyBuffer(stagingBuffer, vertexBuffer_, bufferSize);
+
+    vkDestroyBuffer(device_, stagingBuffer, nullptr);
+    vkFreeMemory(device_, stagingBufferMemory, nullptr);
   }
 
   void createIndexBuffer() {
@@ -1284,6 +1287,9 @@ private:
         VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_INDEX_BUFFER_BIT,
         VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, indexBuffer_, indexBufferMemory_);
     copyBuffer(stagingBuffer, indexBuffer_, bufferSize);
+
+    vkDestroyBuffer(device_, stagingBuffer, nullptr);
+    vkFreeMemory(device_, stagingBufferMemory, nullptr);
   }
 
   VkCommandBuffer beginSingleTimeCommands() {
