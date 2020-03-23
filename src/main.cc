@@ -480,7 +480,7 @@ private:
     }
   }
 
-  void populateDebugMessengerCreateInfo(
+  static void populateDebugMessengerCreateInfo(
       VkDebugUtilsMessengerCreateInfoEXT& createInfo) {
     createInfo.sType = VK_STRUCTURE_TYPE_DEBUG_UTILS_MESSENGER_CREATE_INFO_EXT;
     createInfo.messageSeverity =
@@ -505,7 +505,7 @@ private:
   }
 
   struct SwapChainSupportDetails {
-    VkSurfaceCapabilitiesKHR capabilities;
+    VkSurfaceCapabilitiesKHR capabilities{};
     std::vector<VkSurfaceFormatKHR> formats;
     std::vector<VkPresentModeKHR> presentModes;
   };
@@ -539,7 +539,7 @@ private:
     return details;
   }
 
-  VkSurfaceFormatKHR chooseSwapSurfaceFormat(
+  static VkSurfaceFormatKHR chooseSwapSurfaceFormat(
       const std::vector<VkSurfaceFormatKHR>& availableFormats) {
     if (availableFormats.empty()) {
       throw std::runtime_error("empty availableFormats");
@@ -555,7 +555,7 @@ private:
     return availableFormats[0];
   }
 
-  VkPresentModeKHR chooseSwapPresentMode(
+  static VkPresentModeKHR chooseSwapPresentMode(
       const std::vector<VkPresentModeKHR>& availablePresentModes) {
     for (auto const& availablePresentMode : availablePresentModes) {
       if (availablePresentMode == VK_PRESENT_MODE_MAILBOX_KHR) {
@@ -1086,7 +1086,7 @@ private:
                                VK_FORMAT_FEATURE_DEPTH_STENCIL_ATTACHMENT_BIT);
   }
 
-  bool hasStencilComponent(VkFormat format) {
+  static bool hasStencilComponent(VkFormat format) {
     return format == VK_FORMAT_D32_SFLOAT_S8_UINT ||
            format == VK_FORMAT_D24_UNORM_S8_UINT;
   }
