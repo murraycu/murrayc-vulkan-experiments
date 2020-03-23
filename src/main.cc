@@ -415,11 +415,11 @@ private:
     vkEnumerateInstanceLayerProperties(&layerCount, availableLayers.data());
 
     std::cout << "available layers:" << std::endl;
-    for (auto const layer : availableLayers) {
+    for (auto const & layer : availableLayers) {
       std::cout << "\t" << layer.layerName << std::endl;
     }
 
-    for (auto const layer : validationLayers) {
+    for (auto const & layer : validationLayers) {
       for (const auto& layerProperties : availableLayers) {
         if (strcmp(layer, layerProperties.layerName) == 0) {
           return true;
