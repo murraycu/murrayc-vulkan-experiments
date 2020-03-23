@@ -662,7 +662,6 @@ private:
 
     bool isComplete() const {
       return graphicsFamily.has_value() && presentFamily.has_value();
-      ;
     }
   };
 
@@ -723,7 +722,6 @@ private:
 
     createInfo.queueCreateInfoCount = queueCreateInfos.size();
     createInfo.pQueueCreateInfos = queueCreateInfos.data();
-    ;
 
     VkPhysicalDeviceFeatures deviceFeatures = {};
     deviceFeatures.samplerAnisotropy = VK_TRUE;
