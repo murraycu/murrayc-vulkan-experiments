@@ -1751,34 +1751,34 @@ private:
   VkQueue presentQueue_{};
   VkSwapchainKHR swapChain_{};
   std::vector<VkImage> swapChainImages_;
-  VkFormat swapChainImageFormat_;
-  VkExtent2D swapChainExtent_;
+  VkFormat swapChainImageFormat_{};
+  VkExtent2D swapChainExtent_{};
   std::vector<VkImageView> swapChainImageViews_;
-  VkRenderPass renderPass_;
-  VkDescriptorSetLayout descriptorSetLayout_;
-  VkPipelineLayout pipelineLayout_;
-  VkPipeline graphicsPipeline_;
+  VkRenderPass renderPass_{};
+  VkDescriptorSetLayout descriptorSetLayout_{};
+  VkPipelineLayout pipelineLayout_{};
+  VkPipeline graphicsPipeline_{};
   std::vector<VkFramebuffer> swapChainFramebuffers_;
-  VkCommandPool commandPool_;
+  VkCommandPool commandPool_{};
   std::vector<VkCommandBuffer> commandBuffers_;
 
-  VkBuffer vertexBuffer_;
-  VkDeviceMemory vertexBufferMemory_;
-  VkBuffer indexBuffer_;
-  VkDeviceMemory indexBufferMemory_;
+  VkBuffer vertexBuffer_{};
+  VkDeviceMemory vertexBufferMemory_{};
+  VkBuffer indexBuffer_{};
+  VkDeviceMemory indexBufferMemory_{};
   std::vector<VkBuffer> uniformBuffers_;
   std::vector<VkDeviceMemory> uniformBuffersMemory_;
-  VkDescriptorPool descriptorPool_;
-  std::vector<VkDescriptorSet> descriptorSets_;
+  VkDescriptorPool descriptorPool_{};
+  std::vector<VkDescriptorSet> descriptorSets_{};
 
-  VkImage textureImage_;
-  VkDeviceMemory textureImageMemory_;
-  VkImageView textureImageView_;
-  VkSampler textureSampler_;
+  VkImage textureImage_{};
+  VkDeviceMemory textureImageMemory_{};
+  VkImageView textureImageView_{};
+  VkSampler textureSampler_{};
 
-  VkImage depthImage_;
-  VkDeviceMemory depthImageMemory_;
-  VkImageView depthImageView_;
+  VkImage depthImage_{};
+  VkDeviceMemory depthImageMemory_{};
+  VkImageView depthImageView_{};
 
   std::vector<VkSemaphore> imageAvailableSemaphores_;
   std::vector<VkSemaphore> renderFinishedSemaphores_;
