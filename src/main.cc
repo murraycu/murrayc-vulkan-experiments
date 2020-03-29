@@ -1721,8 +1721,6 @@ private:
       throw std::runtime_error("failed to present swap chain image.");
     }
 
-    vkQueueWaitIdle(presentQueue_);
-
     currentFrame_ = (currentFrame_ + 1) % MAX_FRAMES_IN_FLIGHT;
   }
 
