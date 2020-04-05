@@ -25,12 +25,10 @@ MM_INIT_MODULE([murrayc-vulkan-experiments-1.0])
 
 PKG_CHECK_MODULES([PROJECT], [glfw3 glm vulkan])
 
-# TODO: Add -fsanitize=undefined
-# when we figure out why it triggers a crash in vkCreateInstance() when we include tiny_obj_loader.h (but don't even use its API).
 AC_LANG([C++])
 MM_ARG_ENABLE_WARNINGS([PROJECT_WXXFLAGS],
                        [-Wall],
-                       [-pedantic -Wall -Wextra -Wsuggest-override -Wshadow -Wformat-security -Wno-missing-field-initializers -ftrapv -DGSEAL_ENABLE],
+                       [-pedantic -Wall -Wextra -Wsuggest-override -Wshadow -Wformat-security -Wno-missing-field-initializers -fsanitize=undefined -ftrapv -DGSEAL_ENABLE],
                        [])
 
 
