@@ -1111,11 +1111,6 @@ private:
         VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, depthImage_, depthImageMemory_);
     depthImageView_ =
         createImageView(depthImage_, depthFormat, VK_IMAGE_ASPECT_DEPTH_BIT, 1);
-
-    // Optional: See "Explicitly transitioning the depth image" here:
-    // https://vulkan-tutorial.com/Depth_buffering
-    transitionImageLayout(depthImage_, depthFormat, VK_IMAGE_LAYOUT_UNDEFINED,
-                          VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL, 1);
   }
 
   void createTextureImage() {
@@ -1152,7 +1147,7 @@ private:
                     VK_IMAGE_USAGE_SAMPLED_BIT,
                 VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, textureImage_,
                 textureImageMemory_);
-    transitionImageLayout(textureImage_, VK_FORMAT_R8G8B8A8_SRGB,
+    transitionImageLayout(textureImage_,
                           VK_IMAGE_LAYOUT_UNDEFINED,
                           VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, mipLevels_);
     copyBufferToImage(stagingBuffer, textureImage_, texWidth, texHeight);
@@ -1160,7 +1155,7 @@ private:
     // Removed, so we can stay in VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIONAL for
     // generating mipmaps.
     /*
-    transitionImageLayout(textureImage_, VK_FORMAT_R8G8B8A8_SRGB,
+    transitionImageLayout(textureImage_,
                           VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
                           VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL, mipLevels_);
     */
@@ -1310,9 +1305,8 @@ private:
     return result;
   }
 
-  void transitionImageLayout(VkImage image, VkFormat format,
-                             VkImageLayout oldLayout, VkImageLayout newLayout,
-                             uint32_t mipLevels) {
+  void transitionImageLayout(VkImage image, VkImageLayout oldLayout,
+                             VkImageLayout newLayout, uint32_t mipLevels) {
     auto commandBuffer = beginSingleTimeCommands();
 
     VkImageMemoryBarrier barrier = {};
@@ -1322,19 +1316,7 @@ private:
     barrier.srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
     barrier.dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
     barrier.image = image;
-
-    // Optional: See "Explicitly transitioning the depth image" here:
-    // https://vulkan-tutorial.com/Depth_buffering
-    if (newLayout == VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL) {
-      barrier.subresourceRange.aspectMask = VK_IMAGE_ASPECT_DEPTH_BIT;
-
-      if (hasStencilComponent(format)) {
-        barrier.subresourceRange.aspectMask |= VK_IMAGE_ASPECT_STENCIL_BIT;
-      }
-    } else {
-      barrier.subresourceRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
-    }
-
+    barrier.subresourceRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
     barrier.subresourceRange.baseMipLevel = 0;
     barrier.subresourceRange.levelCount = mipLevels;
     barrier.subresourceRange.baseArrayLayer = 0;
@@ -1346,8 +1328,6 @@ private:
     barrier.srcAccessMask = 0;
     barrier.dstAccessMask = 0;
 
-    // Optional: See "Explicitly transitioning the depth image" here:
-    // https://vulkan-tutorial.com/Depth_buffering
     if (oldLayout == VK_IMAGE_LAYOUT_UNDEFINED &&
         newLayout == VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL) {
       barrier.srcAccessMask = 0;
@@ -1362,16 +1342,8 @@ private:
 
       sourceStage = VK_PIPELINE_STAGE_TRANSFER_BIT;
       destinationStage = VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT;
-    } else if (oldLayout == VK_IMAGE_LAYOUT_UNDEFINED &&
-               newLayout == VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL) {
-      barrier.srcAccessMask = 0;
-      barrier.dstAccessMask = VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_READ_BIT |
-                              VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT;
-
-      sourceStage = VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT;
-      destinationStage = VK_PIPELINE_STAGE_EARLY_FRAGMENT_TESTS_BIT;
     } else {
-      throw std::runtime_error("unsupported layout transition.");
+      throw std::invalid_argument("unsupported layout transition!");
     }
 
     vkCmdPipelineBarrier(commandBuffer, sourceStage, destinationStage, 0, 0,
